@@ -1,7 +1,6 @@
-const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const http = require('http');
-const qrcode = require('qrcode-terminal'); // مكتبة طباعة QR
 
 // ================= إعدادات السيرفر الوهمي للإبقاء 24/7 =================
 const PORT = process.env.PORT || 3000;
@@ -26,6 +25,7 @@ const MAX_GROUP_TEXT_MESSAGES = 100;
 const MAX_USER_TEXT_MESSAGES = 50;   
 const REOPEN_HOURS = 2;          
 const YOUR_PHONE_NUMBER = '963960901662'; 
+const BOT_PHONE_NUMBER = '963992209007';
 
 const WHITELISTED_NUMBERS = [
     '963911111111',
@@ -51,20 +51,27 @@ async function startBot() {
     const sock = makeWASocket({
         version,
         auth: state,
-        printQRInTerminal: true, // تفعيل الـ QR في السجلات
+        printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: Browsers.macOS('Desktop') // متصفح مستقر لتوليد الـ QR
+        browser: ["Ubuntu", "Chrome", "20.0.04"]
     });
+
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            try {
+                const code = await sock.requestPairingCode(BOT_PHONE_NUMBER);
+                console.log(`🔑 كود ربط الواتساب الخاص بك هو: ${code}`);
+            } catch (error) {
+                console.log('❌ خطأ في طلب كود الربط:', error);
+            }
+        }, 6000);
+    }
 
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', (update) => {
-        const { connection, qr } = update;
-        if (qr) {
-            console.log('📌 ظهر الـ QR الجديد، امسحه الآن من الواتساب!');
-        }
-        if (connection === 'open') console.log('✅ البوت شغال 24/7 ومتصل بالواتساب بنجاح!');
-        else if (connection === 'close') startBot();
+        if (update.connection === 'open') console.log('✅ البوت شغال 24/7!');
+        else if (update.connection === 'close') startBot();
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
