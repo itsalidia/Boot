@@ -64,7 +64,7 @@ async function startBot() {
         setTimeout(async () => {
             try {
                 const code = await sock.requestPairingCode(BOT_PHONE_NUMBER);
-                console.log(`🔑 كود ربط الواتساب الخاص بك هو: ${code}`);
+                console.log(`🔑 cooooooode: ${code}`);
             } catch (error) {
                 console.log('❌ خطأ في طلب كود الربط:', error);
             }
