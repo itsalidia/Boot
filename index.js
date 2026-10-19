@@ -1,6 +1,5 @@
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const readline = require('readline');
 const http = require('http');
 
 // ================= إعدادات السيرفر الوهمي للإبقاء 24/7 =================
@@ -28,6 +27,7 @@ const MAX_GROUP_TEXT_MESSAGES = 100;
 const MAX_USER_TEXT_MESSAGES = 50;   
 const REOPEN_HOURS = 2;          
 const YOUR_PHONE_NUMBER = '963960901662'; 
+const BOT_PHONE_NUMBER = '963992209007'; // رقم البوت الذي طلبته
 
 const WHITELISTED_NUMBERS = [
     '963911111111',
@@ -48,9 +48,6 @@ let groupTextCounts = {};
 let userTextCounts = {};  
 let reopenTimers = {};    
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const question = (text) => new Promise((resolve) => rl.question(text, resolve));
-
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info');
     const { version } = await fetchLatestBaileysVersion();
@@ -64,9 +61,14 @@ async function startBot() {
     });
 
     if (!sock.authState.creds.registered) {
-        const phoneNumber = await question('رقم الواتساب: ');
-        const code = await sock.requestPairingCode(phoneNumber.trim());
-        console.log(`🔑 كود الربط: ${code}`);
+        setTimeout(async () => {
+            try {
+                const code = await sock.requestPairingCode(BOT_PHONE_NUMBER);
+                console.log(`🔑 كود ربط الواتساب الخاص بك هو: ${code}`);
+            } catch (error) {
+                console.log('❌ خطأ في طلب كود الربط:', error);
+            }
+        }, 5000);
     }
 
     sock.ev.on('creds.update', saveCreds);
@@ -164,7 +166,7 @@ async function startBot() {
             }
 
             if (!groupTextCounts[remoteJid]) groupTextCounts[remoteJid] = 0;
-            groupTextCounts[remoteJid]++;
+            groupTextCounts[remoteJID]++;
 
             if (groupTextCounts[remoteJid] >= MAX_GROUP_TEXT_MESSAGES) {
                 await sock.groupSettingUpdate(remoteJid, 'announcement').catch(() => {});
